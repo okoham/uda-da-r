@@ -517,7 +517,7 @@ wine %>%
    geom_jitter(mapping=aes(x=alcohol, y=sulphates, color=qlevel), alpha=0.9, width=0.005, height=0) 
    #geom_contour(aes(x=alcohol, y=volatile.acidity, z=qlevel), )
    #scale_x_log10() +
-   #scale_y_sqrt()
+   scale_y_log10()
 
 ```
 
