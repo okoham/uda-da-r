@@ -1,7 +1,8 @@
 getwd()
-setwd("c:/users/oliver/Projects/eda-course/datasets")
+setwd("/home/pagzal/projects/uda-da-r/project")
 
 library(tidyverse)
+library(ggplot2)
 library(lubridate)
 #install.packages("gridExtra")
 library(gridExtra)
@@ -11,10 +12,10 @@ library(hexbin)
 #wine <- read.csv("wineQualityWhites.csv")
 
 # readr / tidyverse
-whitewine <- read_csv("wineQualityWhites.csv", 
-                      col_types = cols(X1 = col_skip(), 
-                                       quality = col_integer()))
-rename(whitewine, c("X1" = "id"))
+# whitewine <- read_csv("wineQualityWhites.csv", 
+#                       col_types = cols(X1 = col_skip(), 
+#                                        quality = col_integer()))
+# rename(whitewine, c("X1" = "id"))
 
 
 whitewine <- read_csv("wineQualityWhites.csv", 
@@ -384,3 +385,16 @@ ggplot(aes(x=fixed.acidity, y=volatile.acidity), data=wine) +
 wine.typical %>%
   select(-ID) %>%
   ggpairs()
+
+# correlation
+so2_ratio <- wine$free.sulfur.dioxide / wine$total.sulfur.dioxide
+ggplot(so2_ratio) +
+  geom_point() +
+  geom_abline(slope=1, intercept=0)
+
+wine %>%
+  add_column(so2_ratio = wine$free.sulfur.dioxide / wine$total.sulfur.dioxide) %>%
+  ggplot(aes(y=quality, x=so2_ratio)) + 
+  #geom_histogram()
+  geom_point() +
+  geom_smooth() 
