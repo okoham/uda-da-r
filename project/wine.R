@@ -415,3 +415,6 @@ summary(qmodel)
 
 dmodel <- lm(density ~ alcohol + chlorides + sulphates + total.sulfur.dioxide + residual.sugar + citric.acid + fixed.acidity + volatile.acidity, data=wine) 
 summary(dmodel)
+
+gph <- glm(pH ~ citric.acid + volatile.acidity + fixed.acidity, data=wine)
+summary(gph)
