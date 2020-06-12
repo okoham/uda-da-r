@@ -177,7 +177,7 @@ Quality can take values form 0 to 10. The wines present in the dataset only span
 a range from 3 to 8. There are no _very good_ or _very bad_ wines; the majority 
 has a quality of 5 or 6.
 
-Introducting a new categorical variable, reducing quality to three levels:
+Introducting a new categorical variable, reducing quality to three grades:
 
 - 0-3: bad
 - 4-6: medium
@@ -185,16 +185,16 @@ Introducting a new categorical variable, reducing quality to three levels:
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-quality_groups <- ifelse(wine$quality <= 4, "bad", 
+quality_grades <- ifelse(wine$quality <= 4, "bad", 
                          ifelse(wine$quality >= 7, "good", "medium"))
-wine$bad_medium_good <- ordered(quality_groups, levels = c("bad", "medium", "good"))
-table(wine$bad_medium_good)
+wine$grade <- ordered(quality_grades, levels = c("bad", "medium", "good"))
+table(wine$grade)
 ```
 There are only very few bad wines.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(wine) +
- geom_bar(mapping=aes(bad_medium_good)) 
+ geom_bar(mapping=aes(grade)) 
 ```
 Quality is distributed very unevenly - the majority of wines is in the "medium" 
 group, and there are only very few bad wines.
@@ -234,7 +234,7 @@ influence on wine quality. Potentially, all variables may have an influence.
 
 ### Did you create any new variables from existing variables in the dataset?
 
-I created a categorical variable 'bad_medium_good' from quality. 
+I created a categorical variable 'grade' from quality. 
 
 ### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
 
@@ -254,7 +254,7 @@ potential correlations between variables:
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
 wine %>%
-   select(-c(ID, bad_medium_good)) %>%
+   select(-c(ID, grade)) %>%
    ggpairs(upper = list(continuous = wrap("cor", size=2))) +
    theme_grey(base_size = 6)
 
@@ -267,7 +267,7 @@ Again a pair plot, this time using the categorical quality value:
 wine %>%
   select(-c(ID, quality)) %>%
   ggpairs(upper = list(continuous = wrap("cor", size=2)), 
-          mapping = aes(color = bad_medium_good)) +
+          mapping = aes(color = grade)) +
   theme_grey(base_size = 6)
 ```
 
@@ -287,7 +287,7 @@ wine quality:
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 wine %>%
-gather(key="wine.att", value="measurement", -c(ID, quality, bad_medium_good)) %>%
+gather(key="wine.att", value="measurement", -c(ID, quality, grade)) %>%
 ggplot(aes(x=measurement, y=quality)) +
  geom_point(alpha=0.1) +
  geom_smooth() +
@@ -305,7 +305,7 @@ ggplot(aes(x=measurement, y=quality)) +
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 wine %>%
 select(-c(residual.sugar, chlorides, free.sulfur.dioxide, total.sulfur.dioxide, 
-          density, sulphates, alcohol, quality, bad_medium_good)) %>%
+          density, sulphates, alcohol, quality, grade)) %>%
 gather(key="wine.att", value="measurement", -c(ID, pH)) %>%
 ggplot(aes(x=measurement, y=pH)) +
  geom_point(alpha=0.1) +
@@ -314,19 +314,24 @@ ggplot(aes(x=measurement, y=pH)) +
 ```
 
 
-- correlation between pH and fixed.acidity:
-```{r}
+correlation between pH and fixed.acidity:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 cor(wine$fixed.acidity, wine$pH)
 ```
-- correlation between pH and citric acid:
+correlation between pH and volatile acidity:
+
 ```{r}
 cor(wine$volatile.acidity, wine$pH)
 ```
 
-- correlation between pH and citric acid:
+correlation between pH and citric acid:
+
 ```{r}
 cor(wine$citric.acid, wine$pH)
 ```
+Comclusion:
+
 - medium correlation between pH and citric.acid and fixed.acidity
 - no clear correlation between pH and volatile.acidity
 
@@ -357,106 +362,47 @@ sulfur dioxide.
 
 # Multivariate Plots Section
 
-> **Tip**: Now it's time to put everything together. Based on what you found in
-the bivariate plots section, create a few multivariate plots to investigate
-more complex interactions between variables. Make sure that the plots that you
-create here are justified by the plots you explored in the previous section. If
-you plan on creating any mathematical models, this is the section where you
-will do that.
+### Explore relationships between quality, alcohol, volatile acidity and sulphates
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, Multivariate_Plots}
-
-```
-
-#### sulfates / alcohol / quality
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
 wine %>%
   ggplot() + 
-   geom_point(mapping=aes(x=alcohol, y=volatile.acidity, color=bad_medium_good), alpha=0.9) 
-
+   geom_point(mapping=aes(x=alcohol, y=volatile.acidity, color=grade), 
+              alpha=0.9) 
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-
 wine %>%
   ggplot() + 
-   geom_point(mapping=aes(x=alcohol, y=sulphates, color=bad_medium_good), alpha=0.9) 
-
+   geom_point(mapping=aes(x=alcohol, y=sulphates, color=grade), 
+              alpha=0.9) 
 ```
+
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
 wine %>%
   ggplot() + 
-   geom_point(mapping=aes(x=volatile.acidity, y=sulphates, color=bad_medium_good), alpha=0.8) 
+   geom_point(mapping=aes(x=volatile.acidity, y=sulphates, color=grade), 
+              alpha=0.8) 
 
 ```
-
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-wine %>%
-  #add_column(qlevel = qlevel) %>%
-  ggplot() + 
-   # geom_point(mapping=aes(x=alcohol, y=volatile.acidity, color=qlevel), alpha=0.9) +
-   geom_jitter(mapping=aes(x=chlorides, y=sulphates, color=bad_medium_good), alpha=0.9, width=0.005, height=0) +
-   #geom_contour(aes(x=alcohol, y=volatile.acidity, z=qlevel), )
-   scale_x_log10() + 
-   scale_y_log10()
-
-
-```
-
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-wine %>%
-  #add_column(qlevel = qlevel) %>%
-  ggplot() + 
-   # geom_point(mapping=aes(x=alcohol, y=volatile.acidity, color=qlevel), alpha=0.9) +
-   geom_jitter(mapping=aes(x=alcohol, y=sulphates, color=bad_medium_good), alpha=0.9, width=0.005, height=0) +
-   #geom_contour(aes(x=alcohol, y=volatile.acidity, z=qlevel), )
-   #scale_x_log10() +
-   scale_y_sqrt()
-
-
-```
-
-
-- good wines tend to have high alcohol and low volatile acidity
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-#qlevel <- ordered(wine$quality, levels = 0:10)
-wine %>%
-  #add_column(qlevel = qlevel) %>%
-  ggplot() + 
-   #geom_point(mapping=aes(x=alcohol, y=volatile.acidity, color=qlevel), alpha=0.9) +
-   geom_jitter(mapping=aes(x=alcohol, y=sulphates, color=bad_medium_good), alpha=0.9, width=0.005, height=0) +
-   #geom_contour(aes(x=alcohol, y=volatile.acidity, z=qlevel), )
-   #scale_x_log10() +
-   scale_y_log10()
-
-```
-
-
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-wine %>%
-   ggplot() +
-   geom_jitter(mapping=aes(x=alcohol, y=volatile.acidity, color=bad_medium_good), alpha=0.9, width=0.03, height=0)
-
-```
+In the plots above, bad and good wines are separated - if there were just good 
+ones and bad ones, the three variables could be used to classify wines.
+However, the majority of wines are in the medium group, and they cover the 
+whole range of values, making a classification (with the given variables and 
+linear decision boundaries) difficult.
 
 
 # Multivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
 
-### Were there any interesting or surprising interactions between features?
-
-### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
-
+In the plots above, bad and good wines are separated - if there were just good 
+ones and bad ones, the three variables could be used to classify wines.
+However, the majority of wines are in the medium group, and they cover the 
+whole range of values, making a classification (with the given variables and 
+linear decision boundaries) difficult.
 
 
 
@@ -465,58 +411,61 @@ wine %>%
 
 # Final Plots and Summary
 
-> **Tip**: You've done a lot of exploration and have built up an understanding
-of the structure of and relationships between the variables in your dataset.
-Here, you will select three plots from all of your previous exploration to
-present here as a summary of some of your most interesting findings. Make sure
-that you have refined your selected plots for good titling, axis labels (with
-units), and good aesthetic choices (e.g. color, transparency). After each plot,
-make sure you justify why you chose each plot by describing what it shows.
+
 
 ### Plot One
+
 ```{r echo=FALSE, Plot_One}
 ggplot(data = wine) +
-   geom_bar(aes(quality))
+   geom_bar(aes(quality)) +
+   #scale_fill_manual(values = 0:10) +
+   labs(x = "Quality", title = "Distribution of wine quality")
 ```
 
 ### Description One
 
-Histogram of wine quality. Es fäält auf, dass auf einer Skala von 0 bis 10 xx%
-der Werte bei 5 oder 6 liegen, keiner der Weine liegt bei 0-2 oder 9-10.
-Welchen Sinn ergebit dann die Skala?
+On a possible range from 0 to 10, all wines fall 
+between 3 and 8, and the majority has quality ratings of 5 or 6.
+
 
 ### Plot Two
 ```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Two}
 
 wine %>%
-  select(c(fixed.acidity, volatile.acidity, citric.acid, sulphates, alcohol, bad_medium_good)) %>%
+  select(c(fixed.acidity, volatile.acidity, citric.acid, sulphates, alcohol, 
+           grade)) %>%
    ggpairs(upper = list(continuous = wrap("cor", size=2.5)), 
-           mapping = aes(color = bad_medium_good)) +
-     theme_grey(base_size = 8)
+           mapping = aes(color = grade)) +
+     theme_grey(base_size = 8) +
+     labs(title = "Scatterplot matrix for selected variables")
 ```
-
-
 
 ### Description Two
 
+The scatterplot matrix shows those variable where distributions differ among  
+wine "grades". This subset of variables coud be a starting point for building 
+classification or regressiopn models.
 
 ### Plot Three
-```{r echo=FALSE, Plot_Three}
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Three}
 wine %>%
-gather(key="wine.att", value="measurement", -c(ID, quality, bad_medium_good)) %>%
-ggplot(aes(x=measurement, y=quality)) +
+gather(key="wine.att", value="Attribute", 
+       -c(ID, quality, grade, fixed.acidity, free.sulfur.dioxide, residual.sugar, 
+          pH, density)) %>%
+ggplot(aes(x=Attribute, y=quality)) +
  geom_point(alpha=0.1) +
  geom_smooth() +
- facet_wrap(vars(wine.att), scales='free')
+ facet_wrap(vars(wine.att), scales='free') +
+ labs(title = "Linear and nonlinear relationsships between quality and other attributes", 
+      y = "Quality")
 
 ```
 
 ### Description Three
 
-gute weine tendenziell höherer Alkoholgehalt und geringer Säure.
-be schlechten weinen umgekehrt. 
-Leider überdeckt von den mittleren Weinen. Damit klare Trennung von Klassen 
-anhand einfacher Merkmale nicht möglich.
+This plot shows that there are nonlinear relationships between quality and some
+of the other variables, e.g. citric acid. A good classification or regression 
+model would have to capture these nonlinear relationsships.
 
 ------
 
