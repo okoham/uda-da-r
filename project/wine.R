@@ -398,3 +398,20 @@ wine %>%
   #geom_histogram()
   geom_point() +
   geom_smooth() 
+
+wine %>%
+  #sample_n(20) %>%
+  select(-c(ID, quality)) %>%
+  ggpairs(upper = list(continuous = wrap("cor", size=2))) +
+  theme_grey(base_size = 6)
+
+
+
+phmodel <- lm(pH ~ citric.acid + volatile.acidity + fixed.acidity, data=wine)
+summary(phmodel)
+
+qmodel <- lm(quality ~ alcohol + chlorides + total.sulfur.dioxide + volatile.acidity + sulphates, data=wine) 
+summary(qmodel)
+
+dmodel <- lm(density ~ alcohol + chlorides + sulphates + total.sulfur.dioxide + residual.sugar + citric.acid + fixed.acidity + volatile.acidity, data=wine) 
+summary(dmodel)

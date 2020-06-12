@@ -195,16 +195,16 @@ Introducting a new categorical variable, reducing quality to three levels:
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-quality_groups <- ifelse(wine$quality < 4, "bad", 
-                         ifelse(wine$quality >= 7, "good", "medium"))
+quality_groups <- ifelse(wine$quality <= 4, "bad", 
+                         ifelse(wine$quality >= 6, "good", "medium"))
 wine$bad_medium_good <- ordered(quality_groups, levels = c("bad", "medium", "good"))
 table(wine$bad_medium_good)
 ```
 There are only very few bad wines.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-ggplot() +
- geom_bar(mapping=aes(quality_groups)) 
+ggplot(wine) +
+ geom_bar(mapping=aes(bad_medium_good)) 
 ```
 Quality is distributed very unevenly - the majority of wines is in the "medium" 
 group, and there are only very few bad wines.
@@ -267,14 +267,15 @@ wine %>%
    #sample_n(20) %>%
    select(-c(ID, bad_medium_good)) %>%
    ggpairs(upper = list(continuous = wrap("cor", size=2))) +
-   theme_grey(base_size = 8)
+   theme_grey(base_size = 6)
 
    
 ```
-Correlations between quality and (> 0.3) ...
+Correlations between quality and (> 0.25) ...
 
 - volatile acidity
 - alcohol
+- sulphates
 
 also (> 0.5): 
 
@@ -282,6 +283,17 @@ also (> 0.5):
 - volatile.acidity: citric acid
 - citric acid: pH
 - total.sulfur.dioxide: free.sulfur.dioxide
+
+same, but with discrete target:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+wine %>%
+  #sample_n(20) %>%
+  select(-c(ID, quality)) %>%
+  ggpairs(upper = list(continuous = wrap("cor", size=2)), mapping = aes(color = bad_medium_good)) +
+  theme_grey(base_size = 6)
+```
+
 
 
 
@@ -502,15 +514,45 @@ wine %>%
 
 ```
 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+wine %>%
+  #add_column(qlevel = qlevel) %>%
+  ggplot() + 
+   # geom_point(mapping=aes(x=alcohol, y=volatile.acidity, color=qlevel), alpha=0.9) +
+   geom_jitter(mapping=aes(x=chlorides, y=sulphates, color=bad_medium_good), alpha=0.9, width=0.005, height=0) +
+   #geom_contour(aes(x=alcohol, y=volatile.acidity, z=qlevel), )
+   scale_x_log10() + 
+   scale_y_log10()
+
+
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+wine %>%
+  #add_column(qlevel = qlevel) %>%
+  ggplot() + 
+   # geom_point(mapping=aes(x=alcohol, y=volatile.acidity, color=qlevel), alpha=0.9) +
+   geom_jitter(mapping=aes(x=alcohol, y=sulphates, color=bad_medium_good), alpha=0.9, width=0.005, height=0) +
+   #geom_contour(aes(x=alcohol, y=volatile.acidity, z=qlevel), )
+   #scale_x_log10() +
+   scale_y_sqrt()
+
+
+```
+
+
 - good wines tend to have high alcohol and low volatile acidity
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-qlevel <- ordered(wine$quality, levels = 0:10)
+#qlevel <- ordered(wine$quality, levels = 0:10)
 wine %>%
-  add_column(qlevel = qlevel) %>%
+  #add_column(qlevel = qlevel) %>%
   ggplot() + 
    # geom_point(mapping=aes(x=alcohol, y=volatile.acidity, color=qlevel), alpha=0.9) +
-   geom_jitter(mapping=aes(x=alcohol, y=sulphates, color=qlevel), alpha=0.9, width=0.005, height=0) 
+   geom_jitter(mapping=aes(x=alcohol, y=sulphates, color=bad_medium_good), alpha=0.9, width=0.005, height=0) +
    #geom_contour(aes(x=alcohol, y=volatile.acidity, z=qlevel), )
    #scale_x_log10() +
    scale_y_log10()
@@ -521,9 +563,8 @@ wine %>%
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 wine %>%
-   select(c(volatile.acidity, alcohol, quality)) %>%
    ggplot() +
-   geom_point(aes(x=volatile.acidity, y=alcohol))
+   geom_point(mapping=aes(x=alcohol, y=volatile.acidity, color=bad_medium_good), alpha=0.9, width=0.005, height=0)
 
 ```
 
