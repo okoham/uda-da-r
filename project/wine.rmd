@@ -361,7 +361,7 @@ sulfur dioxide.
 
 # Multivariate Plots Section
 
-### Explore relationships between quality, alcohol, volatile acidity and sulphates
+### Explore relationship between quality, alcohol, volatile acidity, sulphates
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, Multivariate_Plots}
 wine %>%
@@ -469,10 +469,29 @@ model would have to capture these nonlinear relationships.
 
 # Reflection
 
-> **Tip**: Here's the final step! Reflect on the exploration you performed and
-the insights you found. What were some of the struggles that you went through?
-What went well? What was surprising? Make sure you include an insight into
-future work that could be done with the dataset.
+The dataset can be used to predict the wine quality from physical/chemical 
+measurements. 
 
-> **Tip**: Don't forget to remove this, and the other **Tip** sections before
-saving your final work and knitting the final report!
+Difficulties with this dataset: 
+
+- the majority of data lies in the medium range; there are relatively few 'good' 
+  or 'bad' examples. There are no samples for extreme cases (quality below three 
+  or above 8).
+- There are nonlinear relationships between some variables (e.g. citric acid and 
+  quality). Linear correlation measures do not capture these. 
+
+Successes:
+
+- Alcohol content is a good indicator for wine quality
+- There are some correlations between the variables (e.g. fixed acidity and pH). 
+  These could be used to eliminate some of the variables and reduce the number 
+  of dimensions of the problem.
+
+Enriching the analysis:
+
+- More data for extreme cases (good / bad wines)
+- use nonlinear models
+- use dimensionality reduction
+
+
+
