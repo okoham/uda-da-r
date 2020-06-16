@@ -1,6 +1,27 @@
-Red Wine Physicochemical Properties and Quality by Oliver Koch
-==============================================================
-
+---
+title: "Red Wine Physicochemical Properties and Quality"
+author: "Oliver Koch"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+   html_document:
+      # theme of html document
+      # theme of code highlight
+      # table of contents
+      theme          : cosmo     # "default", "cerulean", "journal",
+                                 # "flatly", "readable", "spacelab",
+                                 # "united", "cosmo", "lumen", "paper",
+                                 # "sandstone", "simplex", "yeti"
+      highlight      : tango     # "default", "tango", "pygments",
+                                 # "kate", "monochrome", "espresso",
+                                 # "zenburn", "haddock", "textmate"
+      toc            : true
+      toc_depth      : 3
+      toc_float      : true      # get table of content
+      code_folding   : hide
+      number_sections: yes
+      fig_caption    : yes
+      df_print       : paged
+---
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
 # Load all of the packages that you end up using in your analysis in this code
@@ -22,15 +43,28 @@ library(ggplot2)
 library(dplyr)
 library(GGally)
 library(tibble)
+
+# knitr: suppress code/messages/warnings
+#        set default plot options and center them
+knitr::opts_chunk$set(fig.width=9, fig.height=5, fig.path='Figs/', 
+                      fig.align='center', tidy=TRUE, echo=FALSE, warning=FALSE, 
+                      message=FALSE)
+
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, Load_the_Data}
 # Load the Data
-# the first column of the csv file contains a row index without column name.
-# R automatically assigns this column a name 'X1'
+
+# By default, read_csv reads numerical data as float. I want the quality 
+# column as an integer because that later conversion to a categorical variable 
+# easier.
 
 wine <- read_csv("wineQualityReds.csv", 
                       col_types = cols(quality = col_integer()))
+
+# The first column of the csv file contains a row index without column name.
+# R automatically assigns this column a name 'X1' --- I rename it to 'ID'.
+
 wine <- reshape::rename(wine, c(X1 = "ID"))
 ```
 
@@ -92,6 +126,15 @@ An array of histograms and an array of boxplots provide a first overview of the
 ranges of values and the distribution of data:
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, histo_1}
+
+# create a grid of histograms. 
+
+# First, reshape dataframe into a long list of key/value pairs (using gather), 
+# thereby omitting the ID variable. The original column names go into the 
+# 'wine.att' column, values into the 'measurement' column.
+
+# 'facet_wrap' then creates a faceted view - one histogram per attribute. 
+
 wine %>%
 gather(key="wine.att", value="measurement", -ID) %>%
 ggplot() +
@@ -99,6 +142,16 @@ ggplot() +
  facet_wrap(vars(wine.att), scales='free')
 ```
 ```{r echo=FALSE, message=FALSE, warning=FALSE, box_1}
+
+# making a grid of boxplots.
+
+# First, The select function selects all columns except ID and quality.
+
+# Second, reshape dataframe into a long list of key/value pairs (using gather).
+# as for the histograms above the original column names go into the 'wine.att' 
+# column, values into the 'measurement' column.
+# 'facet_wrap' then creates a faceted view - one boxplot per attribute. 
+
 wine %>%
 select(-c(ID, quality)) %>%
 gather(key="wine.att", value="measurement") %>%
@@ -114,6 +167,9 @@ Plotting the histograms again with a logarithmic scale provides a better view on
 extreme values:
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, histo_2}
+
+# same procedure as in histo_1, except for the logarithmic x axis.
+
 wine %>%
   gather(key="wine.att", value="measurement", -ID) %>%
   ggplot() +
@@ -126,8 +182,11 @@ In order to better visualize the variables with long-tailed distributions, I
 create a filtered dataset (with manually set limits per variable) and plot the 
 histograms again:
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-# dataset without extreme values
+```{r echo=FALSE, message=FALSE, warning=FALSE, histo_3}
+
+# Create a dataframe without extreme values. Criteria were chosen manually.
+# A more systematic approach would be to use quantiles.
+
 wine.typical <- filter(wine, alcohol < 13 & 
                               chlorides < 0.15 & 
                               citric.acid > 0.01 &
@@ -140,9 +199,12 @@ wine.typical <- filter(wine, alcohol < 13 &
                               volatile.acidity < 1
                            ) 
 
+# A grid of histograms as in histo_2.
+# Additional filter: only measurements > 0 because of logarithmic x axis.
+
 wine.typical %>%
 gather(key="wine.att", value="measurement", -ID) %>%
-filter(measurement > 0) %>% # because of log
+filter(measurement > 0) %>%                      # because of log
 ggplot() +
  geom_histogram(mapping=aes(measurement), bins=20) +
  scale_x_log10() +
@@ -151,17 +213,21 @@ ggplot() +
 
 Looking at quality:
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, histo_4}
+
+# a simple histogram of wine quality.
+
 wine %>%
 ggplot() +
  geom_histogram(mapping=aes(quality)) 
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, table_1}
+# show counts per quality level
 table(wine$quality)
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, summary_1}
 summary(wine$quality)
 ```
 
@@ -171,20 +237,28 @@ has a quality of 5 or 6.
 
 Introducing a new categorical variable, reducing quality to three grades:
 
-- 0-3: bad
-- 4-6: medium
+- 0-4: bad
+- 5-6: medium
 - 7-10: good
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, categories}
+
+# create a vector with grades
 quality_grades <- ifelse(wine$quality <= 4, "bad", 
                          ifelse(wine$quality >= 7, "good", "medium"))
+
+# make an ordered categorical variable
 wine$grade <- ordered(quality_grades, levels = c("bad", "medium", "good"))
+
+# show the distribution
 table(wine$grade)
 ```
 
 There are only very few bad wines.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, bar_1}
+
+# for categorical variables, use bar plot instead of histograms
 ggplot(wine) +
  geom_bar(mapping=aes(grade)) 
 ```
@@ -197,17 +271,21 @@ group, and there are only very few bad wines.
 
 Summary statistics of data:
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, analysis_1}
 
+# make a summary, omit ID column
 wine %>%
 select(-ID) %>%
 summary()
-  
 ```
 
 ### What is the structure of your dataset?
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, dim_1}
+
+# dim shows dataframe size (num rows, num cols). 14 columns including ID and the 
+# 'grade' category, but only 12 original variables.´
+
 dim(wine)
 ```
 
@@ -249,21 +327,49 @@ fewer bad ones.
 A pair plot (scatterplot matrix) provides a first overview of dependencies and 
 potential correlations between variables:
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=8, spm1}
+
+# make a scatterplot matrix.
+
+# ignore ID and grade columns. 
+
+# the 'upper = ...' parameter in ggpairs results in display of correlation
+# values instead of default mirrored and redundant scatter plots.
+
+# The remainder of the options makes sure that all information in this complex
+# plot is readable.
+
 wine %>%
-   select(-c(ID, grade)) %>%
-   ggpairs(upper = list(continuous = wrap("cor", size=2))) +
-   theme_grey(base_size = 6)
+   select(-c(ID, grade)) %>% 
+   ggpairs(upper = list(continuous = wrap("cor", size=2.7))) +
+   theme_grey(base_size=5) +
+   theme(text = element_text(size=8),         
+         axis.text.x = element_text(angle=45, vjust=1, hjust=1, size=7),
+         panel.grid.minor = element_blank(), 
+         panel.grid.major = element_blank())  # rotate and resize axis labels
+                                              # and remove grid lines
 ```
 
 Again a pair plot, this time using the categorical quality value:
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=8, spm2}
+
+# Another scatterplot matrix - this time using the categorical quality grade
+# instead of the numerical value. 
+
+# ignore ID and quality columns
+# for further comments see 'spm1' code chunk.
+
 wine %>%
   select(-c(ID, quality)) %>%
-  ggpairs(upper = list(continuous = wrap("cor", size=2)), 
+  ggpairs(upper = list(continuous = wrap("cor", size=1.8)), 
           mapping = aes(color = grade)) +
-  theme_grey(base_size = 6)
+  theme_grey(base_size=5) +
+  theme(text = element_text(size=8), 
+        axis.text.x = element_text(angle=45, vjust=1, hjust=1, size=7),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank())  # rotate and resize axis labels
+                                              # and remove grid lines   
 ```
 
 For the main variable of interest (quality), the highest correlations 
@@ -280,11 +386,25 @@ High values of correlation also occur in these groups:
 The following plots highlight patterns between the measured variables and the 
 wine quality:
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.height=7, influence_quality}
+
+# Grid of scatterplots focusing on quality
+
+# Reshape dataframe into a long form with columns ID, quality, grade, wine.att
+# and measurement.
+
+# 'facet_wrap' then creates a faceted view - one plot per attribute. 
+# jitter is used on (integer) y axis only, to give a better impression of the
+# density of observations.
+# Jitter on y only, using 0.35 to indicate visually that the data are integer / 
+# categorical.
+
+# geom_smooth is used to indicate trends.
+
 wine %>%
 gather(key="wine.att", value="measurement", -c(ID, quality, grade)) %>%
 ggplot(aes(x=measurement, y=quality)) +
- geom_point(alpha=0.1) +
+ geom_jitter(alpha=0.2, height=0.35, width=0) +
  geom_smooth() +
  facet_wrap(vars(wine.att), scales='free')
 ```
@@ -297,7 +417,13 @@ ggplot(aes(x=measurement, y=quality)) +
 
 ### Which variables influence the pH value?
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, influence_ph}
+
+# Grid of scatterplots focusing on pH value
+
+# First, select columns related to pH and acids only.
+# Then, grid of scatter plots plus smoothing line, similar to the plot above.
+
 wine %>%
 select(-c(residual.sugar, chlorides, free.sulfur.dioxide, total.sulfur.dioxide, 
           density, sulphates, alcohol, quality, grade)) %>%
@@ -364,6 +490,9 @@ sulfur dioxide.
 ### Explore relationship between quality, alcohol, volatile acidity, sulphates
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, Multivariate_Plots}
+
+# simple xy plot, using the quality grade as color.
+
 wine %>%
   ggplot() + 
    geom_point(mapping=aes(x=alcohol, y=volatile.acidity, color=grade), 
@@ -371,6 +500,9 @@ wine %>%
 ```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# simple xy plot, using the quality grade as color.
+
 wine %>%
   ggplot() + 
    geom_point(mapping=aes(x=alcohol, y=sulphates, color=grade), 
@@ -379,6 +511,8 @@ wine %>%
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+# simple xy plot, using the quality grade as color.
 
 wine %>%
   ggplot() + 
@@ -411,10 +545,11 @@ linear decision boundaries) difficult.
 
 ### Plot One
 
-```{r echo=FALSE, Plot_One}
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_One}
+
 ggplot(data = wine) +
    geom_bar(aes(quality)) +
-   labs(x = "Quality", title = "Distribution of wine quality")
+   labs(x = "Quality", title = "Distribution of wine quality") # custom labels
 ```
 
 ### Description One
@@ -427,13 +562,20 @@ between 3 and 8, and the majority has quality ratings of 5 or 6.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Two}
 
+# like spm2, but with a reduced set of variables and custom labels
+
 wine %>%
   select(c(fixed.acidity, volatile.acidity, citric.acid, sulphates, alcohol, 
            grade)) %>%
-   ggpairs(upper = list(continuous = wrap("cor", size=2.5)), 
-           mapping = aes(color = grade)) +
-     theme_grey(base_size = 8) +
-     labs(title = "Scatterplot matrix for selected variables")
+  ggpairs(upper = list(continuous = wrap("cor", size=1.8)), 
+          mapping = aes(color = grade)) +
+  theme_grey(base_size=5) +
+  theme(text = element_text(size=8), 
+        axis.text.x = element_text(angle=45, vjust=1, hjust=1, size=7),
+        panel.grid.minor = element_blank(), 
+        panel.grid.major = element_blank()) + # rotate and resize axis labels
+                                              # and remove grid lines   
+        labs(title = "Scatterplot matrix for selected variables")   # custom labels
 ```
 
 ### Description Two
@@ -446,12 +588,15 @@ classification or regression models.
 ### Plot Three
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Three}
+
+# as in influence_quality, but reduced set of variables, custom labels
+
 wine %>%
 gather(key="wine.att", value="Attribute", 
        -c(ID, quality, grade, fixed.acidity, free.sulfur.dioxide, residual.sugar, 
           pH, density)) %>%
 ggplot(aes(x=Attribute, y=quality)) +
- geom_point(alpha=0.1) +
+ geom_jitter(alpha=0.5, height = 0.35, width = 0) +
  geom_smooth() +
  facet_wrap(vars(wine.att), scales='free') +
  labs(title = "Linear and nonlinear relationships between quality and other attributes", 
